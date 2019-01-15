@@ -1,0 +1,29 @@
+//system
+#define  SCREEN_WIDTH 1280
+#define  SCREEN_HEIGHT 800
+#define  BG_WIDTH 300
+#define  BG_HEIGHT 150
+#define  SCREEN_BPP 32
+#define  FRAMERATE  60
+//sprite
+#define  ZOMBIE_WALK_LEFT   0 
+#define  ZOMBIE_WALK_RIGHT  1
+#define  ZOMBIE_WALK_UP     2
+#define  ZOMBIE_WALK_DOWN   3
+#define  ZOMBIE_WALK_LEFT_0 0
+#define  ZOMBIE_WALK_LEFT_1 1
+#define  ZOMBIE_WALK_LEFT_2 2
+#define  ZOMBIE_WALK_LEFT_3 3
+#define  ZOMBIE_WALK_RIGHT_0 4
+#define  ZOMBIE_WALK_RIGHT_1 5
+#define  ZOMBIE_WALK_RIGHT_2 6
+#define  ZOMBIE_WALK_RIGHT_3 7
+#define  ZOMBIE_WALK_UP_0 8
+#define  ZOMBIE_WALK_UP_1 9
+#define  ZOMBIE_WALK_UP_2 10
+#define  ZOMBIE_WALK_UP_3 11
+#define  ZOMBIE_WALK_DOWN_0 12
+#define  ZOMBIE_WALK_DOWN_1 13
+#define  ZOMBIE_WALK_DOWN_2 14
+#define  ZOMBIE_WALK_DOWN_3 15
+
