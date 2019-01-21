@@ -31,13 +31,18 @@ Mix_Chunk *howling3 = NULL;
 Mix_Chunk *howling4 = NULL;
 typedef struct 
 {
+    int left_sno : 8;
     unsigned int left : 1;
+    int right_sno: 8;
     unsigned int right :1;
+    int up_sno: 8;
     unsigned int up: 1;
+    int down_sno: 8;
     unsigned int down: 1;
 } Collision;      //用于存储碰撞检测状态
 typedef struct 
 {
+    int sno;
     int type;
     SDL_Rect box;  //存储精灵边框信息
     int f;  //frame计数
@@ -56,19 +61,23 @@ int load_ttf(char *filename, short font_size);
 int load_sound();
 int show_sprite(Sprite *sprite, int frames, int active);
 int show_block(Sprite *block,int frames, int active);
-int collision_detect(Sprite *sp,Sprite *block);
+int collision_detect(Sprite *sp,Sprite *block, int relative_sp, int relative_block);
 
 int main(int argc,char *argv[])
 {
+    if(RESIZABLE == 1) {
+        CAMERA_WIDTH = 300;
+        CAMERA_HEIGHT = 300;
+    }
     int bg_x_count = SCREEN_WIDTH/BG_WIDTH + 1;
     int bg_y_count = SCREEN_HEIGHT/BG_HEIGHT + 1;
     int mouse_x = 690;
     int mouse_y = 250;
-    Sprite zombie1 = {ZOMBIE_WALK_LEFT,{390,250,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0}};
-    Sprite zombie4 = {FZOMBIE_WALK_LEFT,{690,250,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0}};
-    Sprite human   = {HUMAN_WALK_LEFT,{CAMERA_WIDTH/2 - SPRITE_WIDTH/2 - 1,CAMERA_HEIGHT/2 - SPRITE_HEIGHT/2 - 1,SPRITE_WIDTH,SPRITE_HEIGHT},\
-                      0,0,0,{0,0,0,0}};
-    Sprite cabinet0 = {CABINET_0,{500,400,256,64},0,0,0,{0,0,0,0}};
+    Sprite zombie1 = {1,ZOMBIE_WALK_LEFT,{390,250,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0,0,0,0,0}};
+    Sprite zombie4 = {2,FZOMBIE_WALK_LEFT,{690,250,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0,0,0,0,0}};
+    Sprite human   = {3,HUMAN_WALK_LEFT,{CAMERA_WIDTH/2 - SPRITE_WIDTH/2 - 1,CAMERA_HEIGHT/2 - SPRITE_HEIGHT/2 - 1,SPRITE_WIDTH,SPRITE_HEIGHT},\
+                      0,0,0,{0,0,0,0,0,0,0,0}};
+    Sprite cabinet0 = {10,CABINET_0,{500,400,256,64},0,0,0,{0,0,0,0,0,0,0,0}};
     clip[ZOMBIE_WALK_LEFT_0].x = 0; clip[ZOMBIE_WALK_LEFT_0].y = 48; clip[ZOMBIE_WALK_LEFT_0].w = 32; clip[ZOMBIE_WALK_LEFT_0].h = 48;
     clip[ZOMBIE_WALK_LEFT_1].x = 32; clip[ZOMBIE_WALK_LEFT_1].y = 48; clip[ZOMBIE_WALK_LEFT_1].w = 32; clip[ZOMBIE_WALK_LEFT_1].h = 48;
     clip[ZOMBIE_WALK_LEFT_2].x = 64; clip[ZOMBIE_WALK_LEFT_2].y = 48; clip[ZOMBIE_WALK_LEFT_2].w = 32; clip[ZOMBIE_WALK_LEFT_2].h = 48;
@@ -354,9 +363,13 @@ int main(int argc,char *argv[])
         //绘制block
         show_block(&cabinet0,FRAMERATE,cabinet0.active);
         //碰撞检测
-        collision_detect(&zombie1,&cabinet0);
-        collision_detect(&zombie4,&cabinet0);
-        collision_detect(&human,&cabinet0);
+        collision_detect(&zombie1,&cabinet0,0,0);
+        collision_detect(&zombie1,&human,0,1);
+        collision_detect(&zombie4,&cabinet0,0,0);
+        collision_detect(&zombie4,&human,0,1);
+        collision_detect(&human,&cabinet0,1,0);
+        collision_detect(&human,&zombie4,1,0);
+        collision_detect(&human,&zombie1,1,0);
         //显示精灵状态
         char str_zombie1[100] = "";
         char str_zombie4[100] = "";
@@ -733,35 +746,67 @@ int show_block(Sprite *block,int frames, int active)
     return 0;
 }
 
-int collision_detect(Sprite *sp,Sprite *block) 
+int collision_detect(Sprite *sp, Sprite *block, int relative_sp, int relative_block) 
 {
-    int sp_left = sp->box.x;
-    int sp_right = sp->box.x + sp->box.w;
-    int sp_up = sp->box.y;
-    int sp_down = sp->box.y + sp->box.h;
-    int block_left = block->box.x;
-    int block_right = block->box.x + block->box.w;
-    int block_up = block->box.y;
-    int block_down = block->box.y + block->box.h;
+    int sp_left,sp_right,sp_up,sp_down;
+    int block_left,block_right,block_up,block_down;
+    if(relative_sp == 1) {   //sp使用相对坐标（类似human）
+        sp_left = sp->box.x + camera.x;
+        sp_right = sp->box.x + sp->box.w + camera.x;
+        sp_up = sp->box.y + camera.y;
+        sp_down = sp->box.y + sp->box.h + camera.y;
+    }else {
+        sp_left = sp->box.x;
+        sp_right = sp->box.x + sp->box.w;
+        sp_up = sp->box.y;
+        sp_down = sp->box.y + sp->box.h;
+    } 
+    if(relative_block == 1) {     //block使用相对坐标（类似human）
+        block_left = block->box.x + camera.x;
+        block_right = block->box.x + block->box.w + camera.x;
+        block_up = block->box.y + camera.y;
+        block_down = block->box.y + block->box.h + camera.y;        
+    }else {       
+        block_left = block->box.x;
+        block_right = block->box.x + block->box.w;
+        block_up = block->box.y;
+        block_down = block->box.y + block->box.h;
+    }
     //printf("sp_l=%d sp_r=%d sp_u=%d sp_d=%d bl_l=%d bl_r=%d bl_u=%d bl_d=%d\n",\
     //        sp_left,sp_right,sp_up,sp_down,block_left,block_right,block_up,block_down);
     if(sp_left > block_right || sp_right < block_left || sp_up > block_down || sp_down < block_up) {
-        sp->coll.left = 0;
-        sp->coll.right = 0;
-        sp->coll.up = 0;
-        sp->coll.down = 0;
+        if(sp->coll.left_sno == block->sno) {
+            sp->coll.left = 0;
+            sp->coll.left_sno = 0;
+        }
+        if(sp->coll.right_sno == block->sno) {
+            sp->coll.right = 0;
+            sp->coll.right_sno = 0;
+        }
+        if(sp->coll.up_sno == block->sno) {
+            sp->coll.up = 0;
+            sp->coll.up_sno = 0;
+        }
+        if(sp->coll.down_sno == block->sno) {
+            sp->coll.down = 0;
+            sp->coll.down_sno = 0;
+        }
     }else {
-        if(sp_left == block_right) {
-            sp->coll.left = 1;
+        if(sp_left <= block_right && (sp_left >= block_right - 2)) {
+            sp->coll.left = sp->coll.left || 1;
+            sp->coll.left_sno = block->sno;
         }
-        if(sp_right == block_left) {
-            sp->coll.right = 1;
+        if(sp_right >= block_left && (sp_right <= block_left + 2)) {
+            sp->coll.right = sp->coll.right || 1;
+            sp->coll.right_sno = block->sno;
         }
-        if(sp_up == block_down) {
-            sp->coll.up = 1;
+        if(sp_up <= block_down && (sp_up >= block_down - 2)) {
+            sp->coll.up = sp->coll.up || 1;
+            sp->coll.up_sno = block->sno;
         }
-        if(sp_down == block_up) {
-            sp->coll.down = 1;
+        if(sp_down >= block_up && (sp_down <= block_up + 2)) {
+            sp->coll.down = sp->coll.down || 1;
+            sp->coll.down_sno = block->sno;
         }
         /*if(sp_left >= block_left && sp_left <= block_right) {
             sp->coll.left = 1;

@@ -1,8 +1,14 @@
 //system
+#define  RESIZABLE    0
+#if RESIZABLE == 1
+    unsigned int CAMERA_WIDTH;
+    unsigned int CAMERA_HEIGHT;
+#else
+    #define  CAMERA_WIDTH  640
+    #define  CAMERA_HEIGHT 480
+#endif
 #define  SCREEN_WIDTH 1920
 #define  SCREEN_HEIGHT 1080
-#define  CAMERA_WIDTH  640
-#define  CAMERA_HEIGHT 480
 #define  BG_WIDTH 300
 #define  BG_HEIGHT 150
 #define  SCREEN_BPP 32
