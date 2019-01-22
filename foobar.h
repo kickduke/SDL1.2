@@ -1,12 +1,6 @@
 //system
-#define  RESIZABLE    0
-#if RESIZABLE == 1
-    unsigned int CAMERA_WIDTH;
-    unsigned int CAMERA_HEIGHT;
-#else
-    #define  CAMERA_WIDTH  640
-    #define  CAMERA_HEIGHT 480
-#endif
+#define  CAMERA_WIDTH 640
+#define  CAMERA_HEIGHT 480
 #define  SCREEN_WIDTH 1920
 #define  SCREEN_HEIGHT 1080
 #define  BG_WIDTH 300
@@ -22,6 +16,10 @@
 #define  ZOMBIE_WALK_UP     2
 #define  ZOMBIE_WALK_DOWN   3
 #define  CABINET_0          4
+#define  BULLET_LEFT        5
+#define  BULLET_RIGHT       6
+#define  BULLET_UP          7
+#define  BULLET_DOWN        8
 #define  FZOMBIE_WALK_LEFT  5
 #define  FZOMBIE_WALK_RIGHT 6
 #define  FZOMBIE_WALK_UP    7
@@ -79,4 +77,7 @@
 #define  HUMAN_WALK_DOWN_1 46
 #define  HUMAN_WALK_DOWN_2 47
 #define  HUMAN_WALK_DOWN_3 48
-
+#define  BULLET_LEFT_0     49
+#define  BULLET_RIGHT_0    50
+#define  BULLET_UP_0       51
+#define  BULLET_DOWN_0     52

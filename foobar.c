@@ -20,6 +20,7 @@ SDL_Surface *sprite_info1 = NULL;
 SDL_Surface *sprite_info4 = NULL;
 SDL_Surface *sprite_info2 = NULL;
 SDL_Surface *sprite_info3 = NULL;
+SDL_Surface *bullet = NULL;
 SDL_Surface *mouse = NULL;
 SDL_Surface *screen = NULL;
 SDL_Surface *block0 = NULL;
@@ -49,9 +50,11 @@ typedef struct
     int sc; //sprite clip计数
     int active;   //静止标志，0：静止  大于0：动态
     Collision coll;    //碰撞检测，四个方向
+    int is_dead;     //是否失效   
 } Sprite;
-SDL_Rect clip[48];
+SDL_Rect clip[53];
 SDL_Rect camera;
+int alpha = SDL_ALPHA_OPAQUE;
 
 void blit_surface(int x, int y, SDL_Surface *source, SDL_Surface *dest,SDL_Rect *clip);
 int init(char *a_caption);
@@ -65,19 +68,16 @@ int collision_detect(Sprite *sp,Sprite *block, int relative_sp, int relative_blo
 
 int main(int argc,char *argv[])
 {
-    if(RESIZABLE == 1) {
-        CAMERA_WIDTH = 300;
-        CAMERA_HEIGHT = 300;
-    }
     int bg_x_count = SCREEN_WIDTH/BG_WIDTH + 1;
     int bg_y_count = SCREEN_HEIGHT/BG_HEIGHT + 1;
     int mouse_x = 690;
     int mouse_y = 250;
-    Sprite zombie1 = {1,ZOMBIE_WALK_LEFT,{390,250,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0,0,0,0,0}};
-    Sprite zombie4 = {2,FZOMBIE_WALK_LEFT,{690,250,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0,0,0,0,0}};
+    Sprite zombie1 = {1,ZOMBIE_WALK_LEFT,{390,250,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0,0,0,0,0},0};
+    Sprite zombie4 = {2,FZOMBIE_WALK_LEFT,{690,250,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0,0,0,0,0},0};
     Sprite human   = {3,HUMAN_WALK_LEFT,{CAMERA_WIDTH/2 - SPRITE_WIDTH/2 - 1,CAMERA_HEIGHT/2 - SPRITE_HEIGHT/2 - 1,SPRITE_WIDTH,SPRITE_HEIGHT},\
-                      0,0,0,{0,0,0,0,0,0,0,0}};
-    Sprite cabinet0 = {10,CABINET_0,{500,400,256,64},0,0,0,{0,0,0,0,0,0,0,0}};
+                      0,0,0,{0,0,0,0,0,0,0,0},0};
+    Sprite cabinet0 = {10,CABINET_0,{500,400,256,64},0,0,0,{0,0,0,0,0,0,0,0},0};
+    Sprite bullet = {100,BULLET_LEFT,{0,0,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0,0,0,0,0},1};
     clip[ZOMBIE_WALK_LEFT_0].x = 0; clip[ZOMBIE_WALK_LEFT_0].y = 48; clip[ZOMBIE_WALK_LEFT_0].w = 32; clip[ZOMBIE_WALK_LEFT_0].h = 48;
     clip[ZOMBIE_WALK_LEFT_1].x = 32; clip[ZOMBIE_WALK_LEFT_1].y = 48; clip[ZOMBIE_WALK_LEFT_1].w = 32; clip[ZOMBIE_WALK_LEFT_1].h = 48;
     clip[ZOMBIE_WALK_LEFT_2].x = 64; clip[ZOMBIE_WALK_LEFT_2].y = 48; clip[ZOMBIE_WALK_LEFT_2].w = 32; clip[ZOMBIE_WALK_LEFT_2].h = 48;
@@ -127,6 +127,10 @@ int main(int argc,char *argv[])
     clip[HUMAN_WALK_DOWN_1].x = 32; clip[HUMAN_WALK_DOWN_1].y = 0; clip[HUMAN_WALK_DOWN_1].w = 32; clip[HUMAN_WALK_DOWN_1].h = 48;
     clip[HUMAN_WALK_DOWN_2].x = 64; clip[HUMAN_WALK_DOWN_2].y = 0; clip[HUMAN_WALK_DOWN_2].w = 32; clip[HUMAN_WALK_DOWN_2].h = 48;
     clip[HUMAN_WALK_DOWN_3].x = 96; clip[HUMAN_WALK_DOWN_3].y = 0; clip[HUMAN_WALK_DOWN_3].w = 32; clip[HUMAN_WALK_DOWN_3].h = 48;
+    clip[BULLET_DOWN_0].x = 0; clip[BULLET_DOWN_0].y = 0; clip[BULLET_DOWN_0].w = 32; clip[BULLET_DOWN_0].h = 48; 
+    clip[BULLET_LEFT_0].x = 0; clip[BULLET_LEFT_0].y = 48; clip[BULLET_LEFT_0].w = 32; clip[BULLET_LEFT_0].h = 48;
+    clip[BULLET_RIGHT_0].x = 0; clip[BULLET_RIGHT_0].y = 96; clip[BULLET_RIGHT_0].w = 32; clip[BULLET_RIGHT_0].h = 48;
+    clip[BULLET_UP_0].x = 0; clip[BULLET_UP_0].y = 144; clip[BULLET_UP_0].w = 32; clip[BULLET_UP_0].h = 48; 
     camera.x = 0;
     camera.y = 0;
     camera.w = CAMERA_WIDTH;
@@ -214,6 +218,15 @@ int main(int argc,char *argv[])
                         presskey = SDLK_s;
                         human.active = 1;
                         human.type = HUMAN_WALK_DOWN;
+                        break;
+                    case SDLK_u:
+                        presskey = SDLK_u;
+                        break;
+                    case SDLK_i:
+                        presskey = SDLK_i;
+                        break;
+                    case SDLK_j:
+                        presskey = SDLK_j;
                         break;
                 }
             }
@@ -311,6 +324,33 @@ int main(int argc,char *argv[])
                             : (camera.y == 0 ? human.box.y + CAMERA_SPEED : camera.h/2 - SPRITE_HEIGHT/2 - 1 ));
                 }
                 break;
+            case SDLK_u:
+                alpha = (alpha + 2 <= SDL_ALPHA_OPAQUE ? alpha + 2 : SDL_ALPHA_OPAQUE);
+                break;
+            case SDLK_i:
+                alpha = (alpha - 2 >= 0 ? alpha - 2 : 0);
+                break;
+            case SDLK_j:
+                if(bullet.is_dead == 1) {   //init flyer
+                    bullet.box.x = human.box.x + human.box.w;
+                    bullet.box.y = human.box.y + human.box.h/2;
+                    bullet.is_dead = 0;
+                    bullet.f = 0;
+                    bullet.sc = 0;
+                    if(human.type == HUMAN_WALK_LEFT) {
+                        bullet.type = BULLET_LEFT;
+                    }
+                    if(human.type == HUMAN_WALK_RIGHT) {
+                        bullet.type = BULLET_RIGHT;
+                    }
+                    if(human.type == HUMAN_WALK_UP) {
+                        bullet.type = BULLET_UP;
+                    }
+                    if(human.type == HUMAN_WALK_DOWN) {
+                        bullet.type = BULLET_DOWN;
+                    }
+                }
+                
         }    
         //zombie4 跟随鼠标移动
         if(zombie4.box.x < mouse_x + camera.x && zombie4.coll.right != 1) {
@@ -354,6 +394,9 @@ int main(int argc,char *argv[])
         show_sprite(&zombie1,30,zombie1.active);   
         show_sprite(&zombie4,15,zombie4.active);
         show_sprite(&human,20,human.active);
+        if(bullet.is_dead != 1) {
+            show_sprite(&bullet,60,bullet.active);
+        }
         if(mouse != NULL) {
             blit_surface(20,20,mouse,screen,NULL);
         }
@@ -460,7 +503,12 @@ int init(char *a_caption)
     if(block0 == NULL) {
         printf("load_image() failed...\n");
         return 0;
-    }   
+    }
+    bullet = load_image("/home/kqs/Project/SDL1.2/resource/bullet.png",1);
+    if(bullet == NULL) {
+        printf("load_image() failed...\n");
+        return 0;
+    }
     //加载文字
     if(load_ttf("/home/kqs/Project/SDL1.2/resource/YaHeiConsolas.ttf",20) == -1) {
         printf("load_ttf() failed...\n");
@@ -719,6 +767,18 @@ int show_sprite(Sprite *sp,int frames, int active)
             blit_surface(sp->box.x,sp->box.y,sprite3,screen,&clip[HUMAN_WALK_DOWN_3]);
         }
     }
+    if(sp->type == BULLET_LEFT) {
+        blit_surface(sp->box.x,sp->box.y,sprite3,screen,&clip[BULLET_LEFT_0]);
+    }
+    if(sp->type == BULLET_RIGHT) {
+        blit_surface(sp->box.x,sp->box.y,sprite3,screen,&clip[BULLET_RIGHT_0]);
+    }
+    if(sp->type == BULLET_UP) {
+        blit_surface(sp->box.x,sp->box.y,sprite3,screen,&clip[BULLET_UP_0]);
+    }
+    if(sp->type == BULLET_DOWN) {
+        blit_surface(sp->box.x,sp->box.y,sprite3,screen,&clip[BULLET_DOWN_0]);
+    }
         //精灵是否活动控制
         if(active != 0) {
             sp->f++;
@@ -733,6 +793,7 @@ int show_sprite(Sprite *sp,int frames, int active)
 int show_block(Sprite *block,int frames, int active)
 {
     if(block->type == CABINET_0) {
+        SDL_SetAlpha(block0,SDL_SRCALPHA,alpha);
         blit_surface(block->box.x - camera.x,block->box.y - camera.y,block0,screen,&clip[BLOCK_CABINET_0]);
     }
     //block是否活动控制
