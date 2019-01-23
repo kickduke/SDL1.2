@@ -21,6 +21,7 @@ SDL_Surface *sprite_info4 = NULL;
 SDL_Surface *sprite_info2 = NULL;
 SDL_Surface *sprite_info3 = NULL;
 SDL_Surface *bullet = NULL;
+SDL_Surface *weapon = NULL;
 SDL_Surface *mouse = NULL;
 SDL_Surface *screen = NULL;
 SDL_Surface *block0 = NULL;
@@ -30,6 +31,7 @@ Mix_Chunk *howling1 = NULL;   //音效
 Mix_Chunk *howling2 = NULL;
 Mix_Chunk *howling3 = NULL;
 Mix_Chunk *howling4 = NULL;
+Mix_Chunk *gunshot = NULL;
 typedef struct 
 {
     int left_sno : 8;
@@ -52,7 +54,7 @@ typedef struct
     Collision coll;    //碰撞检测，四个方向
     int is_dead;     //是否失效   
 } Sprite;
-SDL_Rect clip[53];
+SDL_Rect clip[60];
 SDL_Rect camera;
 int alpha = SDL_ALPHA_OPAQUE;
 
@@ -72,12 +74,14 @@ int main(int argc,char *argv[])
     int bg_y_count = SCREEN_HEIGHT/BG_HEIGHT + 1;
     int mouse_x = 690;
     int mouse_y = 250;
+    int human_armed = 0;
     Sprite zombie1 = {1,ZOMBIE_WALK_LEFT,{390,250,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0,0,0,0,0},0};
     Sprite zombie4 = {2,FZOMBIE_WALK_LEFT,{690,250,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0,0,0,0,0},0};
     Sprite human   = {3,HUMAN_WALK_LEFT,{CAMERA_WIDTH/2 - SPRITE_WIDTH/2 - 1,CAMERA_HEIGHT/2 - SPRITE_HEIGHT/2 - 1,SPRITE_WIDTH,SPRITE_HEIGHT},\
                       0,0,0,{0,0,0,0,0,0,0,0},0};
     Sprite cabinet0 = {10,CABINET_0,{500,400,256,64},0,0,0,{0,0,0,0,0,0,0,0},0};
-    Sprite bullet = {100,BULLET_LEFT,{0,0,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0,0,0,0,0},1};
+    Sprite bullet = {100,BULLET_LEFT,{0,0,16,16},0,0,0,{0,0,0,0,0,0,0,0},1};
+    Sprite handgun = {110,HANDGUN_ITEM,{90,200,30,15},0,0,0,{0,0,0,0,0,0,0,0},0};
     clip[ZOMBIE_WALK_LEFT_0].x = 0; clip[ZOMBIE_WALK_LEFT_0].y = 48; clip[ZOMBIE_WALK_LEFT_0].w = 32; clip[ZOMBIE_WALK_LEFT_0].h = 48;
     clip[ZOMBIE_WALK_LEFT_1].x = 32; clip[ZOMBIE_WALK_LEFT_1].y = 48; clip[ZOMBIE_WALK_LEFT_1].w = 32; clip[ZOMBIE_WALK_LEFT_1].h = 48;
     clip[ZOMBIE_WALK_LEFT_2].x = 64; clip[ZOMBIE_WALK_LEFT_2].y = 48; clip[ZOMBIE_WALK_LEFT_2].w = 32; clip[ZOMBIE_WALK_LEFT_2].h = 48;
@@ -127,10 +131,11 @@ int main(int argc,char *argv[])
     clip[HUMAN_WALK_DOWN_1].x = 32; clip[HUMAN_WALK_DOWN_1].y = 0; clip[HUMAN_WALK_DOWN_1].w = 32; clip[HUMAN_WALK_DOWN_1].h = 48;
     clip[HUMAN_WALK_DOWN_2].x = 64; clip[HUMAN_WALK_DOWN_2].y = 0; clip[HUMAN_WALK_DOWN_2].w = 32; clip[HUMAN_WALK_DOWN_2].h = 48;
     clip[HUMAN_WALK_DOWN_3].x = 96; clip[HUMAN_WALK_DOWN_3].y = 0; clip[HUMAN_WALK_DOWN_3].w = 32; clip[HUMAN_WALK_DOWN_3].h = 48;
-    clip[BULLET_DOWN_0].x = 0; clip[BULLET_DOWN_0].y = 0; clip[BULLET_DOWN_0].w = 32; clip[BULLET_DOWN_0].h = 48; 
-    clip[BULLET_LEFT_0].x = 0; clip[BULLET_LEFT_0].y = 48; clip[BULLET_LEFT_0].w = 32; clip[BULLET_LEFT_0].h = 48;
-    clip[BULLET_RIGHT_0].x = 0; clip[BULLET_RIGHT_0].y = 96; clip[BULLET_RIGHT_0].w = 32; clip[BULLET_RIGHT_0].h = 48;
-    clip[BULLET_UP_0].x = 0; clip[BULLET_UP_0].y = 144; clip[BULLET_UP_0].w = 32; clip[BULLET_UP_0].h = 48; 
+    clip[BULLET_DOWN_0].x = 8; clip[BULLET_DOWN_0].y = 32; clip[BULLET_DOWN_0].w = 16; clip[BULLET_DOWN_0].h = 16; 
+    clip[BULLET_LEFT_0].x = 0; clip[BULLET_LEFT_0].y = 64; clip[BULLET_LEFT_0].w = 16; clip[BULLET_LEFT_0].h = 16;
+    clip[BULLET_RIGHT_0].x = 16; clip[BULLET_RIGHT_0].y = 112; clip[BULLET_RIGHT_0].w = 16; clip[BULLET_RIGHT_0].h = 16;
+    clip[BULLET_UP_0].x = 8; clip[BULLET_UP_0].y = 144; clip[BULLET_UP_0].w = 16; clip[BULLET_UP_0].h = 16; 
+    clip[HANDGUN_ITEM_0].x = 0; clip[HANDGUN_ITEM_0].y = 0; clip[HANDGUN_ITEM_0].w = 30; clip[HANDGUN_ITEM_0].h = 15; 
     camera.x = 0;
     camera.y = 0;
     camera.w = CAMERA_WIDTH;
@@ -226,7 +231,9 @@ int main(int argc,char *argv[])
                         presskey = SDLK_i;
                         break;
                     case SDLK_j:
-                        presskey = SDLK_j;
+                        if(human_armed == 1) {
+                            presskey = SDLK_j;     
+                        }         
                         break;
                 }
             }
@@ -293,7 +300,7 @@ int main(int argc,char *argv[])
                     } 
                     human.box.x = (camera.x == 0 ? (human.box.x - CAMERA_SPEED >= 0 ? human.box.x - CAMERA_SPEED : 0) \
                                    : (camera.x >= SCREEN_WIDTH -camera.w - 2 ? (human.box.x - CAMERA_SPEED) : camera.w/2 - SPRITE_WIDTH/2 - 1));
-                }            
+                }
                 break;
             case SDLK_d:
                 if(human.coll.right != 1) {
@@ -303,7 +310,7 @@ int main(int argc,char *argv[])
                     human.box.x = (camera.x >= SCREEN_WIDTH - camera.w - 2 ?  \
                           (human.box.x + CAMERA_SPEED <= camera.w - human.box.w - 1 ? human.box.x + CAMERA_SPEED : camera.w - human.box.w - 1) \
                                    : (camera.x == 0 ? human.box.x + CAMERA_SPEED : camera.w/2 - SPRITE_WIDTH/2 - 1));
-                }        
+                }
                 break;
             case SDLK_w:
                 if(human.coll.up != 1) {
@@ -332,24 +339,32 @@ int main(int argc,char *argv[])
                 break;
             case SDLK_j:
                 if(bullet.is_dead == 1) {   //init flyer
-                    bullet.box.x = human.box.x + human.box.w;
-                    bullet.box.y = human.box.y + human.box.h/2;
-                    bullet.is_dead = 0;
-                    bullet.f = 0;
-                    bullet.sc = 0;
+                    Mix_PlayChannel(-1,gunshot,0);
                     if(human.type == HUMAN_WALK_LEFT) {
                         bullet.type = BULLET_LEFT;
+                        bullet.box.x = human.box.x - bullet.box.w;
+                        bullet.box.y = human.box.y + human.box.h/4;
                     }
                     if(human.type == HUMAN_WALK_RIGHT) {
                         bullet.type = BULLET_RIGHT;
+                        bullet.box.x = human.box.x + human.box.w;
+                        bullet.box.y = human.box.y + human.box.h/4;
                     }
                     if(human.type == HUMAN_WALK_UP) {
                         bullet.type = BULLET_UP;
+                        bullet.box.x = human.box.x + human.box.w/3;
+                        bullet.box.y = human.box.y - bullet.box.h;
                     }
                     if(human.type == HUMAN_WALK_DOWN) {
                         bullet.type = BULLET_DOWN;
-                    }
+                        bullet.box.x = human.box.x + human.box.w/3;
+                        bullet.box.y = human.box.y + human.box.h;
+                    }                  
+                    bullet.is_dead = 0;
+                    bullet.f = 0;
+                    bullet.sc = 0;
                 }
+                break;
                 
         }    
         //zombie4 跟随鼠标移动
@@ -367,16 +382,16 @@ int main(int argc,char *argv[])
         }
         //zombie4动作判断
         if(zombie4.box.x < mouse_x + camera.x && mouse_x + camera.x - zombie4.box.x >= abs(zombie4.box.y - mouse_y - camera.y)) {
-            zombie4.type = ZOMBIE_WALK_RIGHT;
+            zombie4.type = FZOMBIE_WALK_RIGHT;
         }
         if(zombie4.box.x > mouse_x  + camera.x && zombie4.box.x - mouse_x - camera.x >= abs(zombie4.box.y - mouse_y - camera.y)) {
-            zombie4.type = ZOMBIE_WALK_LEFT;
+            zombie4.type = FZOMBIE_WALK_LEFT;
         }
         if(zombie4.box.y > mouse_y + camera.y && zombie4.box.y - mouse_y - camera.y >= abs(zombie4.box.x - mouse_x - camera.x)) {
-            zombie4.type = ZOMBIE_WALK_UP;
+            zombie4.type = FZOMBIE_WALK_UP;
         }
         if(zombie4.box.y < mouse_y + camera.y && mouse_y + camera.y - zombie4.box.y >= abs(zombie4.box.x - mouse_x - camera.x)) {
-            zombie4.type = ZOMBIE_WALK_DOWN;
+            zombie4.type = FZOMBIE_WALK_DOWN;
         }
         if(zombie4.box.x == mouse_x + camera.x && zombie4.box.y == mouse_y + camera.y) {
             zombie4.active = 0;
@@ -405,6 +420,9 @@ int main(int argc,char *argv[])
         }
         //绘制block
         show_block(&cabinet0,FRAMERATE,cabinet0.active);
+        if(handgun.is_dead == 0) {
+            show_block(&handgun,FRAMERATE,handgun.active);
+        }
         //碰撞检测
         collision_detect(&zombie1,&cabinet0,0,0);
         collision_detect(&zombie1,&human,0,1);
@@ -413,6 +431,10 @@ int main(int argc,char *argv[])
         collision_detect(&human,&cabinet0,1,0);
         collision_detect(&human,&zombie4,1,0);
         collision_detect(&human,&zombie1,1,0);
+        collision_detect(&human,&handgun,1,0);
+        if(handgun.coll.left == 1 || handgun.coll.right == 1 || handgun.coll.up == 1 || handgun.coll.down == 1) {
+            handgun.is_dead = 1;
+        }
         //显示精灵状态
         char str_zombie1[100] = "";
         char str_zombie4[100] = "";
@@ -509,6 +531,11 @@ int init(char *a_caption)
         printf("load_image() failed...\n");
         return 0;
     }
+    weapon = load_image("/home/kqs/Project/SDL1.2/resource/handgun.png",2);
+    if(weapon == NULL) {
+        printf("load_image() failed...\n");
+        return 0;
+    }
     //加载文字
     if(load_ttf("/home/kqs/Project/SDL1.2/resource/YaHeiConsolas.ttf",20) == -1) {
         printf("load_ttf() failed...\n");
@@ -538,7 +565,10 @@ SDL_Surface *load_image(char *filename,int is_sprite)
         Uint32 colorkey = SDL_MapRGB(refine_image->format,0xFF,0xFF,0xFF);
         SDL_SetColorKey(refine_image,SDL_SRCCOLORKEY,colorkey);
     }
-    
+    if(is_sprite == 2) {
+        Uint32 colorkey = SDL_MapRGB(refine_image->format,0x0,0x0,0x0);
+        SDL_SetColorKey(refine_image,SDL_SRCCOLORKEY,colorkey);
+    }
     return refine_image;
 }
 
@@ -558,7 +588,8 @@ int load_sound()
     howling2 = Mix_LoadWAV("/home/kqs/Project/SDL1.2/resource/howling2.wav");
     howling3 = Mix_LoadWAV("/home/kqs/Project/SDL1.2/resource/howling3.wav");
     howling4 = Mix_LoadWAV("/home/kqs/Project/SDL1.2/resource/howling4.wav");
-    if(bgmusic == NULL || howling1 == NULL || howling2 == NULL || howling3 == NULL || howling4 == NULL ) {
+    gunshot  = Mix_LoadWAV("/home/kqs/Project/SDL1.2/resource/gunshot.wav");
+    if(bgmusic == NULL || howling1 == NULL || howling2 == NULL || howling3 == NULL || howling4 == NULL || gunshot == NULL) {
         return -1;
     }
     return 0;
@@ -768,16 +799,32 @@ int show_sprite(Sprite *sp,int frames, int active)
         }
     }
     if(sp->type == BULLET_LEFT) {
-        blit_surface(sp->box.x,sp->box.y,sprite3,screen,&clip[BULLET_LEFT_0]);
+        blit_surface(sp->box.x,sp->box.y,bullet,screen,&clip[BULLET_LEFT_0]);
+        sp->box.x -= FLYER_SPEED;
+        if(sp->box.x < 0) {
+            sp->is_dead = 1;
+        }
     }
     if(sp->type == BULLET_RIGHT) {
-        blit_surface(sp->box.x,sp->box.y,sprite3,screen,&clip[BULLET_RIGHT_0]);
+        blit_surface(sp->box.x,sp->box.y,bullet,screen,&clip[BULLET_RIGHT_0]);
+        sp->box.x += FLYER_SPEED;
+        if(sp->box.x > CAMERA_WIDTH) {
+            sp->is_dead = 1;
+        }
     }
     if(sp->type == BULLET_UP) {
-        blit_surface(sp->box.x,sp->box.y,sprite3,screen,&clip[BULLET_UP_0]);
+        blit_surface(sp->box.x,sp->box.y,bullet,screen,&clip[BULLET_UP_0]);
+        sp->box.y -= FLYER_SPEED;
+        if(sp->box.y < 0) {
+            sp->is_dead = 1;
+        }
     }
     if(sp->type == BULLET_DOWN) {
-        blit_surface(sp->box.x,sp->box.y,sprite3,screen,&clip[BULLET_DOWN_0]);
+        blit_surface(sp->box.x,sp->box.y,bullet,screen,&clip[BULLET_DOWN_0]);
+        sp->box.y += FLYER_SPEED;
+        if(sp->box.y > CAMERA_HEIGHT) {
+            sp->is_dead = 1;
+        }
     }
         //精灵是否活动控制
         if(active != 0) {
@@ -795,6 +842,9 @@ int show_block(Sprite *block,int frames, int active)
     if(block->type == CABINET_0) {
         SDL_SetAlpha(block0,SDL_SRCALPHA,alpha);
         blit_surface(block->box.x - camera.x,block->box.y - camera.y,block0,screen,&clip[BLOCK_CABINET_0]);
+    }
+    if(block->type == HANDGUN_ITEM) {
+        blit_surface(block->box.x - camera.x, block->box.y, weapon, screen, &clip[HANDGUN_ITEM_0]);
     }
     //block是否活动控制
         if(active != 0) {

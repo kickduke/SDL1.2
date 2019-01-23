@@ -8,6 +8,7 @@
 #define  SCREEN_BPP 32
 #define  FRAMERATE  60
 #define  CAMERA_SPEED 2
+#define  FLYER_SPEED 8
 #define  SPRITE_WIDTH 32
 #define  SPRITE_HEIGHT 48
 //sprite
@@ -16,10 +17,6 @@
 #define  ZOMBIE_WALK_UP     2
 #define  ZOMBIE_WALK_DOWN   3
 #define  CABINET_0          4
-#define  BULLET_LEFT        5
-#define  BULLET_RIGHT       6
-#define  BULLET_UP          7
-#define  BULLET_DOWN        8
 #define  FZOMBIE_WALK_LEFT  5
 #define  FZOMBIE_WALK_RIGHT 6
 #define  FZOMBIE_WALK_UP    7
@@ -28,6 +25,11 @@
 #define  HUMAN_WALK_RIGHT   10
 #define  HUMAN_WALK_UP      11
 #define  HUMAN_WALK_DOWN    12
+#define  BULLET_LEFT        13
+#define  BULLET_RIGHT       14
+#define  BULLET_UP          15
+#define  BULLET_DOWN        16
+#define  HANDGUN_ITEM       17
 #define  ZOMBIE_WALK_LEFT_0 0
 #define  ZOMBIE_WALK_LEFT_1 1
 #define  ZOMBIE_WALK_LEFT_2 2
@@ -81,3 +83,4 @@
 #define  BULLET_RIGHT_0    50
 #define  BULLET_UP_0       51
 #define  BULLET_DOWN_0     52
+#define  HANDGUN_ITEM_0    53
