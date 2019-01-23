@@ -15,6 +15,7 @@ SDL_Surface *sprite2 = NULL;
 SDL_Surface *sprite3 = NULL;
 SDL_Surface *background = NULL;
 SDL_Surface *message = NULL;
+SDL_Surface *message_weapon = NULL;
 SDL_Surface *fps_info = NULL;
 SDL_Surface *sprite_info1 = NULL;
 SDL_Surface *sprite_info4 = NULL;
@@ -32,6 +33,7 @@ Mix_Chunk *howling2 = NULL;
 Mix_Chunk *howling3 = NULL;
 Mix_Chunk *howling4 = NULL;
 Mix_Chunk *gunshot = NULL;
+Mix_Chunk *empty = NULL;
 typedef struct 
 {
     int left_sno : 8;
@@ -75,6 +77,7 @@ int main(int argc,char *argv[])
     int mouse_x = 690;
     int mouse_y = 250;
     int human_armed = 0;
+    int bullet_count = 6;
     Sprite zombie1 = {1,ZOMBIE_WALK_LEFT,{390,250,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0,0,0,0,0},0};
     Sprite zombie4 = {2,FZOMBIE_WALK_LEFT,{690,250,SPRITE_WIDTH,SPRITE_HEIGHT},0,0,0,{0,0,0,0,0,0,0,0},0};
     Sprite human   = {3,HUMAN_WALK_LEFT,{CAMERA_WIDTH/2 - SPRITE_WIDTH/2 - 1,CAMERA_HEIGHT/2 - SPRITE_HEIGHT/2 - 1,SPRITE_WIDTH,SPRITE_HEIGHT},\
@@ -153,6 +156,7 @@ int main(int argc,char *argv[])
     short presskey = 0;   // 0：未按键  
     SDL_Event event;   
     SDL_Color font_color = {0,0,200};
+    char msg_weapon[40] = "赤手空拳";
     
     //初始化
     if(init("FOOBAR") == -1) {
@@ -232,6 +236,7 @@ int main(int argc,char *argv[])
                         break;
                     case SDLK_j:
                         if(human_armed == 1) {
+                            sprintf(msg_weapon,"手枪/子弹：%d发",bullet_count);
                             presskey = SDLK_j;     
                         }         
                         break;
@@ -339,30 +344,35 @@ int main(int argc,char *argv[])
                 break;
             case SDLK_j:
                 if(bullet.is_dead == 1) {   //init flyer
-                    Mix_PlayChannel(-1,gunshot,0);
-                    if(human.type == HUMAN_WALK_LEFT) {
-                        bullet.type = BULLET_LEFT;
-                        bullet.box.x = human.box.x - bullet.box.w;
-                        bullet.box.y = human.box.y + human.box.h/4;
-                    }
-                    if(human.type == HUMAN_WALK_RIGHT) {
-                        bullet.type = BULLET_RIGHT;
-                        bullet.box.x = human.box.x + human.box.w;
-                        bullet.box.y = human.box.y + human.box.h/4;
-                    }
-                    if(human.type == HUMAN_WALK_UP) {
-                        bullet.type = BULLET_UP;
-                        bullet.box.x = human.box.x + human.box.w/3;
-                        bullet.box.y = human.box.y - bullet.box.h;
-                    }
-                    if(human.type == HUMAN_WALK_DOWN) {
-                        bullet.type = BULLET_DOWN;
-                        bullet.box.x = human.box.x + human.box.w/3;
-                        bullet.box.y = human.box.y + human.box.h;
-                    }                  
+                    if(bullet_count > 0) {
+                        bullet_count--;
+                        Mix_PlayChannel(-1,gunshot,0);
+                        if(human.type == HUMAN_WALK_LEFT) {
+                            bullet.type = BULLET_LEFT;
+                            bullet.box.x = human.box.x - bullet.box.w;
+                            bullet.box.y = human.box.y + human.box.h/4;
+                            }
+                        if(human.type == HUMAN_WALK_RIGHT) {
+                            bullet.type = BULLET_RIGHT;
+                            bullet.box.x = human.box.x + human.box.w;
+                            bullet.box.y = human.box.y + human.box.h/4;
+                        }
+                        if(human.type == HUMAN_WALK_UP) {
+                            bullet.type = BULLET_UP;
+                            bullet.box.x = human.box.x + human.box.w/3;
+                            bullet.box.y = human.box.y - bullet.box.h;
+                        }
+                        if(human.type == HUMAN_WALK_DOWN) {
+                            bullet.type = BULLET_DOWN;
+                            bullet.box.x = human.box.x + human.box.w/3;
+                            bullet.box.y = human.box.y + human.box.h;
+                        }                  
                     bullet.is_dead = 0;
                     bullet.f = 0;
                     bullet.sc = 0;
+                    }else {
+                        Mix_PlayChannel(-1,empty,1);
+                    } 
                 }
                 break;
                 
@@ -409,15 +419,20 @@ int main(int argc,char *argv[])
         show_sprite(&zombie1,30,zombie1.active);   
         show_sprite(&zombie4,15,zombie4.active);
         show_sprite(&human,20,human.active);
-        if(bullet.is_dead != 1) {
+        if(bullet.is_dead != 1 && bullet_count >= 0) {
             show_sprite(&bullet,60,bullet.active);
         }
         if(mouse != NULL) {
-            blit_surface(20,20,mouse,screen,NULL);
+            blit_surface(20,2,mouse,screen,NULL);
         }
         if(message != NULL) {
             //blit_surface((SCREEN_WIDTH - message->w)/2,(SCREEN_HEIGHT - message->h)/2,message,screen,NULL);
         }
+        if(human_armed == 1) {
+            sprintf(msg_weapon,"手枪/子弹：%d发",bullet_count);
+        }
+        message_weapon =  TTF_RenderUTF8_Solid(font,msg_weapon,font_color);
+        blit_surface(20,100,message_weapon,screen,NULL);
         //绘制block
         show_block(&cabinet0,FRAMERATE,cabinet0.active);
         if(handgun.is_dead == 0) {
@@ -431,9 +446,12 @@ int main(int argc,char *argv[])
         collision_detect(&human,&cabinet0,1,0);
         collision_detect(&human,&zombie4,1,0);
         collision_detect(&human,&zombie1,1,0);
-        collision_detect(&human,&handgun,1,0);
+        collision_detect(&handgun,&human,1,0);
         if(handgun.coll.left == 1 || handgun.coll.right == 1 || handgun.coll.up == 1 || handgun.coll.down == 1) {
+            sprintf(msg_weapon,"手枪/子弹：%d发",bullet_count);
             handgun.is_dead = 1;
+            human_armed = 1;
+            bullet_count = 6;
         }
         //显示精灵状态
         char str_zombie1[100] = "";
@@ -451,10 +469,10 @@ int main(int argc,char *argv[])
         sprite_info4 = TTF_RenderText_Solid(font,str_zombie4,font_color);
         sprite_info2 = TTF_RenderText_Solid(font,str_human,font_color);
         sprite_info3 = TTF_RenderText_Solid(font,str_camera,font_color);
-        blit_surface(20,50,sprite_info1,screen,NULL);
-        blit_surface(20,80,sprite_info4,screen,NULL);
-        blit_surface(20,110,sprite_info2,screen,NULL);
-        blit_surface(20,140,sprite_info3,screen,NULL);
+        blit_surface(20,20,sprite_info1,screen,NULL);
+        blit_surface(20,40,sprite_info4,screen,NULL);
+        blit_surface(20,60,sprite_info2,screen,NULL);
+        blit_surface(20,80,sprite_info3,screen,NULL);
         //显示FPS
         char str_fps[20] = "";
         sprintf(str_fps,"FPS:%d",FPS);
@@ -537,7 +555,7 @@ int init(char *a_caption)
         return 0;
     }
     //加载文字
-    if(load_ttf("/home/kqs/Project/SDL1.2/resource/YaHeiConsolas.ttf",20) == -1) {
+    if(load_ttf("/home/kqs/Project/SDL1.2/resource/YaHeiConsolas.ttf",12) == -1) {
         printf("load_ttf() failed...\n");
         return -1;
     }
@@ -589,7 +607,9 @@ int load_sound()
     howling3 = Mix_LoadWAV("/home/kqs/Project/SDL1.2/resource/howling3.wav");
     howling4 = Mix_LoadWAV("/home/kqs/Project/SDL1.2/resource/howling4.wav");
     gunshot  = Mix_LoadWAV("/home/kqs/Project/SDL1.2/resource/gunshot.wav");
-    if(bgmusic == NULL || howling1 == NULL || howling2 == NULL || howling3 == NULL || howling4 == NULL || gunshot == NULL) {
+    empty = Mix_LoadWAV("/home/kqs/Project/SDL1.2/resource/empty.wav");
+    if(bgmusic == NULL || howling1 == NULL || howling2 == NULL \
+       || howling3 == NULL || howling4 == NULL || gunshot == NULL || empty == NULL) {
         return -1;
     }
     return 0;
@@ -882,6 +902,18 @@ int collision_detect(Sprite *sp, Sprite *block, int relative_sp, int relative_bl
         block_right = block->box.x + block->box.w;
         block_up = block->box.y;
         block_down = block->box.y + block->box.h;
+    }
+    if(sp->is_dead == 1)  {//若精灵已失效，不会发生碰撞
+        block_left = -8888;
+        block_right = -8888;
+        block_up = -8888;
+        block_down = -8888;
+    }
+    if(block->is_dead == 1)  {//若精灵已失效，不会发生碰撞
+        block_left = -9999;
+        block_right = -9999;
+        block_up = -9999;
+        block_down = -9999;
     }
     //printf("sp_l=%d sp_r=%d sp_u=%d sp_d=%d bl_l=%d bl_r=%d bl_u=%d bl_d=%d\n",\
     //        sp_left,sp_right,sp_up,sp_down,block_left,block_right,block_up,block_down);
