@@ -30,6 +30,14 @@
 #define  BULLET_UP          15
 #define  BULLET_DOWN        16
 #define  HANDGUN_ITEM       17
+#define  DZOMBIE_LEFT       18
+#define  DZOMBIE_RIGHT      19
+#define  DZOMBIE_UP         20
+#define  DZOMBIE_DOWN       21
+#define  DFZOMBIE_LEFT      22
+#define  DFZOMBIE_RIGHT     23
+#define  DFZOMBIE_UP        24
+#define  DFZOMBIE_DOWN      25
 #define  ZOMBIE_WALK_LEFT_0 0
 #define  ZOMBIE_WALK_LEFT_1 1
 #define  ZOMBIE_WALK_LEFT_2 2
@@ -84,3 +92,7 @@
 #define  BULLET_UP_0       51
 #define  BULLET_DOWN_0     52
 #define  HANDGUN_ITEM_0    53
+#define  DZOMBIE_DOWN_0    54
+#define  DZOMBIE_RIGHT_0   55
+#define  DZOMBIE_LEFT_0    56
+#define  DZOMBIE_UP_0      57
